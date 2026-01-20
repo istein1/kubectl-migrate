@@ -8,7 +8,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}=== kind Setup Script ===${NC}"
+echo -e "${GREEN}=== kind & kubectl Setup Script ===${NC}"
 
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -29,6 +29,28 @@ esac
 
 echo -e "${YELLOW}Detected OS: $OS, Architecture: $ARCH${NC}"
 
+# --- Part 1: Install kubectl if missing ---
+if ! command -v kubectl &> /dev/null; then
+    echo -e "${YELLOW}kubectl not found. Installing...${NC}"
+    K8S_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+    
+    case $OS in
+        linux|darwin)
+            curl -LO "https://dl.k8s.io/release/${K8S_VERSION}/bin/${OS}/${ARCH}/kubectl"
+            chmod +x ./kubectl
+            sudo mv ./kubectl /usr/local/bin/kubectl
+            ;;
+        *)
+            echo -e "${RED}Unsupported OS for kubectl: $OS${NC}"
+            exit 1
+            ;;
+    esac
+    echo -e "${GREEN}kubectl installed successfully!${NC}"
+else
+    echo -e "${GREEN}kubectl is already installed.${NC}"
+fi
+
+# --- Part 2: Install kind ---
 # Check if kind is already installed
 if command -v kind &> /dev/null; then
     CURRENT_VERSION=$(kind version 2>/dev/null || echo "unknown")
@@ -64,11 +86,14 @@ if [[ "$SKIP_INSTALL" != "true" ]]; then
     kind version
 fi
 
-# Detect container runtime (Podman or Docker)
+# --- Part 3: Runtime Detection & Fedora/Podman Fixes ---
 CONTAINER_RUNTIME=""
 if command -v podman &> /dev/null; then
     echo -e "${YELLOW}Detected Podman${NC}"
     CONTAINER_RUNTIME="podman"
+
+    # Fedora-specific: kind needs the experimental provider flag for Podman
+    export KIND_EXPERIMENTAL_PROVIDER=podman
 
     # Check if podman is running
     if ! podman info &> /dev/null; then
@@ -79,8 +104,7 @@ if command -v podman &> /dev/null; then
     # Set up podman socket for kind if not already running
     if ! systemctl --user is-active --quiet podman.socket; then
         echo -e "${YELLOW}Starting podman socket for kind...${NC}"
-        systemctl --user start podman.socket
-        systemctl --user enable podman.socket
+        systemctl --user enable --now podman.socket
     fi
 
     # Export DOCKER_HOST to use podman socket
@@ -104,12 +128,6 @@ elif command -v docker &> /dev/null; then
     fi
 else
     echo -e "${RED}Error: Neither Podman nor Docker is installed${NC}"
-    echo -e "${YELLOW}kind requires either Podman or Docker to run${NC}"
-    echo ""
-    echo -e "For Fedora Linux, install Podman with:"
-    echo -e "  ${GREEN}sudo dnf install -y podman${NC}"
-    echo ""
-    echo -e "Or install Docker from: https://docs.docker.com/get-docker/"
     exit 1
 fi
 
@@ -128,7 +146,9 @@ if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
         echo -e "${YELLOW}Deleting existing cluster...${NC}"
         kind delete cluster --name "${CLUSTER_NAME}"
     else
-        echo -e "${GREEN}Using existing cluster${NC}"
+        echo -e "${GREEN}Using existing cluster. Re-syncing kubeconfig...${NC}"
+        # Fedora Fix: Re-exporting config ensures the dynamic port is updated
+        kind export kubeconfig --name "${CLUSTER_NAME}"
         kubectl config use-context "kind-${CLUSTER_NAME}"
         exit 0
     fi
@@ -140,6 +160,8 @@ kind create cluster --name "${CLUSTER_NAME}"
 
 # Verify cluster is running
 echo -e "${GREEN}Verifying cluster status...${NC}"
+# Re-syncing config here is a safety measure for rootless Podman
+kind export kubeconfig --name "${CLUSTER_NAME}"
 kubectl cluster-info --context "kind-${CLUSTER_NAME}"
 
 # Configure kubectl context
@@ -151,8 +173,3 @@ echo -e "Cluster info:"
 kubectl cluster-info
 echo ""
 echo -e "${GREEN}You can now use kubectl to interact with your cluster${NC}"
-echo -e "Useful commands:"
-echo -e "  ${YELLOW}kind get clusters${NC}           - List all kind clusters"
-echo -e "  ${YELLOW}kubectl cluster-info${NC}        - Check cluster status"
-echo -e "  ${YELLOW}kind delete cluster${NC}         - Delete the cluster"
-echo -e "  ${YELLOW}kind load docker-image <img>${NC} - Load a Docker image into the cluster"
