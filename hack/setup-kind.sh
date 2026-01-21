@@ -173,7 +173,6 @@ echo -e "Cluster info:"
 kubectl cluster-info
 echo ""
 echo -e "${GREEN}You can now use kubectl to interact with your cluster${NC}"
-echo -e "${GREEN}You can now use kubectl to interact with your cluster${NC}"
 echo -e "Useful commands:"
 echo -e "  ${YELLOW}kind get clusters${NC}           - List all kind clusters"
 echo -e "  ${YELLOW}kubectl cluster-info${NC}        - Check cluster status"
