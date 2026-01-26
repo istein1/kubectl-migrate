@@ -25,7 +25,7 @@ LDFLAGS = -ldflags "\
 	-X 'github.com/konveyor/kubectl-migrate/internal/buildinfo.BuildDate=$(BUILD_DATE)'"
 
 # Platforms for cross-compilation
-PLATFORMS = linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64
+PLATFORMS = linux/amd64 linux/arm64 darwin/amd64 darwin/arm64
 
 .PHONY: all build build-all clean test deps install resources-deploy resources-destroy help
 
@@ -69,8 +69,8 @@ clean:
 	rm -rf $(BUILD_DIR)
 	@echo "Clean complete!"
 
-## test: Run tests
-test:
+## test: Run golang unit tests
+test-unit:
 	@echo "Running tests..."
 	$(GOTEST) -v ./...
 

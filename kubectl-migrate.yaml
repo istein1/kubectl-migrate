@@ -66,11 +66,3 @@ spec:
     uri: https://github.com/konveyor/kubectl-migrate/releases/download/v0.1.0/kubectl-migrate-linux-arm64.tar.gz
     sha256: "" # To be filled during release
     bin: kubectl-migrate
-
-  - selector:
-      matchLabels:
-        os: windows
-        arch: amd64
-    uri: https://github.com/konveyor/kubectl-migrate/releases/download/v0.1.0/kubectl-migrate-windows-amd64.zip
-    sha256: "" # To be filled during release
-    bin: kubectl-migrate.exe

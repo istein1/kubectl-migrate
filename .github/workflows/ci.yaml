@@ -5,9 +5,11 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '10 3 * * *'
 
 jobs:
-  test:
+  test-unit:
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -30,8 +32,8 @@ jobs:
     - name: Download dependencies
       run: make deps
 
-    - name: Run tests
-      run: make test
+    - name: Run unit tests
+      run: make test-unit
 
     - name: Run go vet
       run: make vet
@@ -47,14 +49,11 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: test
+    needs: test-unit
     strategy:
       matrix:
-        goos: [linux, darwin, windows]
+        goos: [linux, darwin]
         goarch: [amd64, arm64]
-        exclude:
-          - goos: windows
-            goarch: arm64
     steps:
     - name: Checkout code
       uses: actions/checkout@v4

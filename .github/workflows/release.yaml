@@ -48,8 +48,6 @@ jobs:
         tar czf kubectl-migrate-darwin-amd64.tar.gz kubectl-migrate-darwin-amd64
         # Darwin arm64
         tar czf kubectl-migrate-darwin-arm64.tar.gz kubectl-migrate-darwin-arm64
-        # Windows amd64
-        zip kubectl-migrate-windows-amd64.zip kubectl-migrate-windows-amd64.exe
         # Generate checksums
         sha256sum *.tar.gz *.zip > checksums.txt
 
@@ -58,7 +56,6 @@ jobs:
       with:
         files: |
           bin/*.tar.gz
-          bin/*.zip
           bin/checksums.txt
         draft: false
         prerelease: false
