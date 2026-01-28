@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,9 @@ type rsyncLogStream struct {
 	err        chan error
 	progress   *Progress
 	outputFile *string
+	ctx        context.Context
+	cancel     context.CancelFunc
+	wg         sync.WaitGroup
 }
 
 func NewRsyncLogStream(restCfg *rest.Config, pvc types.NamespacedName, labels map[string]string, output string) LogStreams {
@@ -51,6 +55,7 @@ func (r *rsyncLogStream) Init() error {
 	r.stdout = make(chan string)
 	r.stderr = make(chan string)
 	r.err = make(chan error)
+	r.ctx, r.cancel = context.WithCancel(context.Background())
 
 	clientset, err := kubernetes.NewForConfig(r.restCfg)
 	if err != nil {
@@ -76,11 +81,23 @@ func (r *rsyncLogStream) Init() error {
 	r.progress = NewProgress(r.pvc)
 	var lastProgress *Progress
 
+	r.wg.Add(1)
 	go func() {
 		defer podLogStream.Close()
+		defer r.wg.Done()
+		defer close(r.stdout)
+		defer close(r.stderr)
+		defer close(r.err)
+
 		logString := ""
 		zeroBytes := 0
 		for {
+			// Check if context is cancelled
+			select {
+			case <-r.ctx.Done():
+				return
+			default:
+			}
 			buf := make([]byte, 32*1024)
 			n, readErr := podLogStream.Read(buf)
 			if n > 0 {
@@ -146,9 +163,12 @@ func writeProgressToFile(o string, p *Progress) error {
 }
 
 func (r *rsyncLogStream) Close() {
-	close(r.stdout)
-	close(r.stderr)
-	close(r.err)
+	// Signal the goroutine to stop
+	if r.cancel != nil {
+		r.cancel()
+	}
+	// Wait for the goroutine to finish and close the channels
+	r.wg.Wait()
 }
 
 func (r *rsyncLogStream) Streams() (stdout chan string, stderr chan string, err chan error) {
