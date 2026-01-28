@@ -69,9 +69,9 @@ func NewApplyCommand(f *flags.GlobalFlags) *cobra.Command {
 			return nil
 		},
 		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlags(cmd.Flags())
-			viper.Unmarshal(&o.Flags)
-			viper.Unmarshal(o.globalFlags)
+			_ = viper.BindPFlags(cmd.Flags())
+			_ = viper.Unmarshal(&o.Flags)
+			_ = viper.Unmarshal(&o.globalFlags)
 		},
 	}
 
