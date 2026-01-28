@@ -195,7 +195,11 @@ func (t *TransferPVCCommand) Complete(c *cobra.Command, args []string) error {
 	}
 
 	if t.Flags.DestinationContext == "" {
-		t.Flags.DestinationContext = *t.configFlags.Context
+		if t.configFlags.Context != nil && *t.configFlags.Context != "" {
+			t.Flags.DestinationContext = *t.configFlags.Context
+		} else {
+			t.Flags.DestinationContext = rawConfig.CurrentContext
+		}
 	}
 
 	for name, context := range rawConfig.Contexts {

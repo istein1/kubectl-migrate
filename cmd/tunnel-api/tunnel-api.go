@@ -82,7 +82,11 @@ func (t *TunnelAPIOptions) Complete(c *cobra.Command, args []string) error {
 	}
 
 	if t.DestinationContext == "" {
-		t.DestinationContext = *t.configFlags.Context
+		if t.configFlags.Context != nil && *t.configFlags.Context != "" {
+			t.DestinationContext = *t.configFlags.Context
+		} else {
+			t.DestinationContext = rawConfig.CurrentContext
+		}
 	}
 
 	for name, context := range rawConfig.Contexts {
