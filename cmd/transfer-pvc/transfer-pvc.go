@@ -233,7 +233,7 @@ func (t *TransferPVCCommand) Validate() error {
 	}
 
 	if t.sourceContext.Cluster == t.destinationContext.Cluster {
-		return fmt.Errorf("both source and destination cluster are the same, this is not support right now, coming soon")
+		return fmt.Errorf("both source and destination cluster are the same; this is not supported yet")
 	}
 
 	err := t.PVC.Validate()
