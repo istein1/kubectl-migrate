@@ -160,23 +160,27 @@ func (o *Options) run() error {
 			return err
 		}
 		outputFilePath := opts.GetOutputFilePath(f.Path)
-		// We must create all the directories here.
-		err = os.MkdirAll(filepath.Dir(outputFilePath), 0755)
-		if err != nil {
+		if err := o.writeOutputFile(outputFilePath, y); err != nil {
 			return err
 		}
-		outputFile, err := os.Create(outputFilePath)
-		if err != nil {
-			return err
-		}
-		defer outputFile.Close()
-		i, err := outputFile.Write(y)
-		if err != nil {
-			return err
-		}
-		log.Debugf("wrote %v bytes for file: %v", i, outputFilePath)
+		log.Debugf("wrote file: %v", outputFilePath)
 	}
 
 	return nil
+}
 
+// writeOutputFile writes content to outputFilePath, creating parent directories as needed.
+// The file is closed immediately after writing to avoid accumulating file handles.
+func (o *Options) writeOutputFile(outputFilePath string, content []byte) error {
+	err := os.MkdirAll(filepath.Dir(outputFilePath), 0755)
+	if err != nil {
+		return err
+	}
+	outputFile, err := os.Create(outputFilePath)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+	_, err = outputFile.Write(content)
+	return err
 }
