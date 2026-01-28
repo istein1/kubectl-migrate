@@ -10,7 +10,7 @@ on:
 
 jobs:
   test-unit:
-    name: Test
+    name: Test Unit
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
