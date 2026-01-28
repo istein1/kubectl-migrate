@@ -186,4 +186,3 @@ func (t *TunnelAPIOptions) run() error {
 
 	return nil
 }
-}
