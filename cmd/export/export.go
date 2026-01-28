@@ -89,7 +89,7 @@ func (o *ExportOptions) Run() error {
 		log.Errorf("error creating the resources directory: %#v", err)
 		return err
 	}
-	// create _clluster directory if it doesnt exist
+	// create _cluster directory if it doesnt exist
 	clusterResourceDir := filepath.Join(o.exportDir, "resources", o.userSpecifiedNamespace, "_cluster")
 	if o.clusterScopedRbac {
 		err = os.MkdirAll(clusterResourceDir, 0700)
@@ -129,7 +129,11 @@ func (o *ExportOptions) Run() error {
 	restConfig.Burst = o.Burst
 	restConfig.QPS = o.QPS
 
-	dynamicClient := dynamic.NewForConfigOrDie(restConfig)
+	dynamicClient, err := dynamic.NewForConfig(restConfig)
+	if err != nil {
+		log.Errorf("cannot create dynamic client: %#v", err)
+		return err
+	}
 
 	features.NewFeatureFlagSet()
 	features.Enable(velerov1api.APIGroupVersionsFeatureFlag)
