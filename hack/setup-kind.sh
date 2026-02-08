@@ -2,13 +2,17 @@
 
 set -e
 
+# Source the utility script
+# This allows the script to use functions defined in utils.sh
+source "$(dirname "$0")/utils.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}=== kind & kubectl Setup Script ===${NC}"
+echo -e "${GREEN}=== kind Setup Script ===${NC}"
 
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -29,26 +33,8 @@ esac
 
 echo -e "${YELLOW}Detected OS: $OS, Architecture: $ARCH${NC}"
 
-# --- Part 1: Install kubectl if missing ---
-if ! command -v kubectl &> /dev/null; then
-    echo -e "${YELLOW}kubectl not found. Installing...${NC}"
-    K8S_VERSION=$(curl -fL -s https://dl.k8s.io/release/stable.txt)
-    
-    case $OS in
-        linux|darwin)
-            curl -fLO "https://dl.k8s.io/release/${K8S_VERSION}/bin/${OS}/${ARCH}/kubectl"
-            chmod +x ./kubectl
-            sudo mv ./kubectl /usr/local/bin/kubectl
-            ;;
-        *)
-            echo -e "${RED}Unsupported OS for kubectl: $OS${NC}"
-            exit 1
-            ;;
-    esac
-    echo -e "${GREEN}kubectl installed successfully!${NC}"
-else
-    echo -e "${GREEN}kubectl is already installed.${NC}"
-fi
+# --- Part 1: Ensure kubectl is installed ---
+install_kubectl
 
 # --- Part 2: Install kind ---
 # Check if kind is already installed
